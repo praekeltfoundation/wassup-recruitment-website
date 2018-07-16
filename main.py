@@ -4,6 +4,7 @@ import json
 from os import environ
 
 import phonenumbers
+from raven.contrib.flask import Sentry
 from flask import (Flask, render_template, flash, request)
 from wtforms import Form, TextField, validators
 from azurewebhook_functions import *
@@ -16,6 +17,7 @@ RAPIDPRO_FLOW_UUID = environ.get("RAPIDPRO_FLOW_UUID")
 DEBUG = False
 app = Flask(__name__)
 app.config.from_object(__name__)
+sentry = Sentry(app, dsn=environ.get("SENTRY_DSN"))
 
 
 class ReusableForm(Form):
