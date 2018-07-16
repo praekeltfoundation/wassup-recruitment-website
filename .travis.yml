@@ -1,0 +1,57 @@
+sudo: false  # Force container-based builds.
+language: python
+
+cache:
+  - pip
+before_install:
+  - pip install --upgrade pip
+install:
+   - pip install -r requirements.txt
+   - pip install -r requirements-dev.txt
+script:
+  - flake8 main.py
+
+jobs:
+  include:
+    - stage: test
+      python: "3.6"
+      # Clear unused build steps
+      services: []
+      deploy: []
+      after_success: []
+    - stage: docker
+      python: "3.6"
+      sudo: required
+      dist: trusty
+      services: [docker]
+      env:
+        - IMAGE_NAME=praekeltfoundation/wassup-recruitment-website
+        - REGISTRY_USER=praekeltorgdeploy
+        - secure: "P5EomT6Bgf/8pUjfS6+BCTmR+6omXax+1Q6N2ktgQ5VSjlS5dzQBwvonSkefq9dAnZLkNmhK0gYCdDTLyIvAVFqksDfk1UIiHpuWhUqwsnxMFtCdTgBtkWTikxTRC+NtKcJFCrfgdGwsGtFXK5f+jLqjoIi1CcK8d6r/fdFrSKS0DEhTm6izB4ZTp9yEdvM++lBvCOYhe89xHrBbq6Y/vJelKsoEEI9wxJRJACFlfL6g+G1CqI75hAzJ+XOdxuUElw9cRMcsW+qN5Cf4C7I55LE2b6lspICOw3K5gFp/pPVgAWnYzk9jDTWmmBFeTRajL23h+rzwVev17/mbTLh9TqSDeuYtHNwm+clJv5TcTxRbCIu++PaKahmM9SbTv0Q/BAVVbVDOkmctDbKEZ0N4p7qNBz7spZBZ3MaJO7Ls7KDN4W1spNMhZ0Nta+B1y/xi0NAOvgBNjdo3dRUKO98XPJQWkp5wVbpJ1T5njjlq/g15rIHoLXTvUrhhmpItkn/HTqmqD0YBpwYD7Q4uU4KRJUKWIVOD3vVn/UpsiVF4opogI45E5zXVFCvdi0qaHuRaTuYBqFXVx5NLqWE6pWtArjiZUhLb8hMln8T3bZHzcfvnXvwjrhlbc96AcPze+DFKmEZ5B+DwDHn4bFJPZpXqKf28R7IzEI87t6n+hHz+o2w=" # yamllint disable-line
+
+      # Update Docker: we want some new docker build features
+      install:
+        - sudo apt-get update
+        - sudo apt-get install -y -o Dpkg::Options::="--force-confold" docker-ce
+
+      before_script:
+        - docker pull "$IMAGE_NAME" || true
+      script:
+        - docker build --pull --tag "$IMAGE_NAME" .
+
+      before_deploy:
+        - pip install docker-ci-deploy==0.3.0
+        - echo -n $REGISTRY_PASS | docker login -u "$REGISTRY_USER" --password-stdin # yamllint disable-line
+      deploy:
+        - provider: script
+          script: dcd --version "$(git rev-parse --short HEAD)" --version-latest "$IMAGE_NAME" # yamllint disable-line
+          on:
+            branch: master
+        - provider: script
+          script: dcd --tag "$TRAVIS_TAG" -- "$IMAGE_NAME"
+          on:
+            tags: true
+
+      # Built steps inherited from the default stage that we don't want
+      before_install: ignore
+after_success: []
