@@ -9,6 +9,7 @@ itsdangerous==0.24
 Jinja2==2.10
 MarkupSafe==1.0
 phonenumbers==8.9.10
+python-dotenv==0.8.2
 pytz==2018.5
 rapidpro-python==2.4
 raven[flask]==6.9.0
