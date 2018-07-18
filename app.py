@@ -75,6 +75,7 @@ def index():
             fields[RAPIDPRO_FIELD] = registration_pin
 
             try:
+                client = TembaClient(RAPIDPRO_URL, RAPIDPRO_TOKEN)
                 contact = client.create_contact(
                     name=name,
                     urns=[formatted_rapidpro_number],
