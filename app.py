@@ -79,7 +79,7 @@ def index():
                 app.logger.debug("Creating Client")
                 client = TembaClient(RAPIDPRO_URL, RAPIDPRO_TOKEN)
                 app.logger.debug("Creating Contact")
-                contact = client.create_contact(
+                client.create_contact(
                     name=name,
                     urns=[formatted_rapidpro_number],
                     groups=[RAPIDPRO_GROUP],
