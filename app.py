@@ -12,7 +12,9 @@ import phonenumbers
 
 from raven.contrib.flask import Sentry
 from flask import (Flask, render_template, flash, request)
-from wtforms import Form, TextField, validators
+from flask_wtf import FlaskForm
+from wtforms import TextField, SubmitField
+from wtforms.validators import DataRequired, Length
 from temba_client.exceptions import TembaBadRequestError
 from temba_client.v2 import TembaClient
 
@@ -41,15 +43,15 @@ app.secret_key = APP_SECRET_KEY
 sentry = Sentry(app, dsn=getenv("SENTRY_DSN"))
 
 
-class ReusableForm(Form):
-    name = TextField("Name:", validators=[validators.required()])
+class ReusableForm(FlaskForm):
+    name = TextField("Name:", validators=[DataRequired()])
     email = TextField(
-        "Email:", validators=[validators.required(), validators.Length(min=6, max=35)]
+        "Email:", validators=[DataRequired(), Length(min=6, max=35)]
     )
     phone = TextField(
-        "Phone:", validators=[validators.required(), validators.Length(min=3, max=35)]
+        "Phone:", validators=[DataRequired(), Length(min=3, max=35)]
     )
-
+    submit = SubmitField('Submit')
 
 def process_number(num):
     try:
@@ -111,9 +113,9 @@ def index():
 
             except TembaBadRequestError:
                 flash("That number has already been submitted")
-        else:
-            flash("Error: All the form fields are required.")
 
+    from pprint import pprint
+    pprint(vars(form.name))
     return render_template("index.html", form=form)
 
 
