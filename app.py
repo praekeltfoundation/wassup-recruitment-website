@@ -114,8 +114,6 @@ def index():
             except TembaBadRequestError:
                 flash("That number has already been submitted")
 
-    from pprint import pprint
-    pprint(vars(form.name))
     return render_template("index.html", form=form)
 
 
