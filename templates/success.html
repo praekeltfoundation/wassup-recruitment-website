@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="py-5 text-center">
+    <p class="lead">Thanks for registering</p>
+    <h2>{{name}}!</h2>
+        <p class="lead">You will receive a whatsapp message asking you for a pin.<br>
+            Please respond with this pin:</p>
+        <h1>{{ registration_pin }}</h1>
+</div>
+
+{% endblock %}

@@ -9,12 +9,16 @@ import math
 import random
 import json
 import phonenumbers
+from phonenumbers.phonenumberutil import NumberParseException
 
 from raven.contrib.flask import Sentry
-from flask import (Flask, render_template, flash, request)
+from flask import Flask, render_template, flash, request, redirect, url_for
+
 from flask_wtf import FlaskForm
 from wtforms import TextField, SubmitField
-from wtforms.validators import DataRequired, Length
+from wtforms.fields.html5 import EmailField
+from wtforms.validators import DataRequired, Length, Email, ValidationError
+
 from temba_client.exceptions import TembaBadRequestError
 from temba_client.v2 import TembaClient
 
@@ -41,27 +45,33 @@ app.secret_key = APP_SECRET_KEY
 sentry = Sentry(app, dsn=getenv("SENTRY_DSN"))
 
 
-class ReusableForm(FlaskForm):
+class PhoneEmailSignUpForm(FlaskForm):
     name = TextField("Name:", validators=[DataRequired()])
-    email = TextField(
-        "Email:", validators=[DataRequired(), Length(min=6, max=35)]
-    )
-    phone = TextField(
-        "Phone:", validators=[DataRequired(), Length(min=3, max=35)]
-    )
-    submit = SubmitField('Submit')
+    email = EmailField("Email:", validators=[DataRequired(), Email()])
+    phone = TextField("Phone:", validators=[DataRequired(), Length(min=8, max=35)])
+    submit = SubmitField("Submit")
+
+    def validate_phone(form, field):
+        if len(field.data) > 16:
+            raise ValidationError(
+                '"Please enter a valid South African cellphone number."'
+            )
+
+        input_number = phonenumbers.parse(field.data, "ZA")
+        if not (phonenumbers.is_valid_number(input_number)):
+            raise ValidationError(
+                '"Please enter a valid South African cellphone number."'
+            )
+
 
 def process_number(num):
-    try:
-        phone = phonenumbers.parse(num)
-    except Exception:
-        phone = phonenumbers.parse(num, "ZA")
-    return (phonenumbers.format_number(phone, phonenumbers.PhoneNumberFormat.E164))
+    phone = phonenumbers.parse(num, "ZA")
+    return phonenumbers.format_number(phone, phonenumbers.PhoneNumberFormat.E164)
 
 
 @app.route("/", methods=["GET", "POST"])
 def index():
-    form = ReusableForm(request.form)
+    form = PhoneEmailSignUpForm(request.form)
     if request.method == "POST":
         if form.validate():
             app.logger.debug("Form Validated")
@@ -93,13 +103,10 @@ def index():
                         restart_participants=True,
                         extra=None,
                     )
-                    flash("Thanks for registration " + name)
-                    flash("You will receive a whatsapp message")
-                    flash(
-                        "Please enter the following number in response: {}".format(
-                            registration_pin
-                        )
+                    return redirect(
+                        url_for("success", registration_pin=registration_pin, name=name)
                     )
+
                 except Exception as e_1:
                     # try and delete the number so that they can start again if they want to
                     try:
@@ -115,11 +122,20 @@ def index():
     return render_template("index.html", form=form)
 
 
+@app.route("/success/", methods=["GET"])
+def success():
+    return render_template(
+        "success.html",
+        registration_pin=request.args.get("registration_pin"),
+        name=request.args.get("name"),
+    )
+
+
 @app.route("/health/", methods=["GET"])
 def health():
     app_id = getenv("MARATHON_APP_ID", None)
     ver = getenv("MARATHON_APP_VERSION", None)
-    return (json.dumps({"id": app_id, "version": ver}))
+    return json.dumps({"id": app_id, "version": ver})
 
 
 if __name__ == "__main__":
