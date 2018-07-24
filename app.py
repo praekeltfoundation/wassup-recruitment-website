@@ -25,16 +25,14 @@ RAPIDPRO_GROUP = getenv("RAPIDPRO_GROUP", None)
 RAPIDPRO_FIELD = getenv("RAPIDPRO_FIELD", None)
 APP_SECRET_KEY = getenv("APP_SECRET_KEY", None)
 
-if (
-    None in [
-        RAPIDPRO_URL,
-        RAPIDPRO_TOKEN,
-        RAPIDPRO_FLOW_UUID,
-        RAPIDPRO_GROUP,
-        RAPIDPRO_FIELD,
-        APP_SECRET_KEY,
-    ]
-):
+if None in [
+    RAPIDPRO_URL,
+    RAPIDPRO_TOKEN,
+    RAPIDPRO_FLOW_UUID,
+    RAPIDPRO_GROUP,
+    RAPIDPRO_FIELD,
+    APP_SECRET_KEY,
+]:
     raise Exception("Improperly Configured Application")
 
 DEBUG = getenv("DEBUG", False)
